@@ -1,9 +1,9 @@
-ARG ARG_PHP_VERSION=7.2
+ARG ARG_PHP_VERSION=5.6
 FROM php:${ARG_PHP_VERSION}-apache
 
-ARG ARG_PHP_VERSION=7.2
-ARG ARG_IONCUBE_VERSION=10.3.2
-ARG ARG_URL=https://secure.gurock.com/downloads/testrail/testrail-latest-ion71.zip
+ARG ARG_PHP_VERSION=5.6
+ARG ARG_IONCUBE_VERSION=5.6
+ARG ARG_URL=https://secure.gurock.com/downloads/testrail/testrail-5.5.0.3727-ion53.zip
 
 ENV TR_DEFAULT_TASK_EXECUTION=60
 ENV TR_CONFIGPATH="/var/www/testrail/config/"
@@ -28,9 +28,8 @@ RUN \
 
 RUN \
     docker-php-ext-install mbstring && \
-    if [ "x$ARG_PHP_VERSION" = "5."* ] ; then docker-php-ext-install mysql; \
-    else docker-php-ext-install mysqli; \
-    fi && \
+    docker-php-ext-install mysql && \
+    docker-php-ext-install mysqli && \
     docker-php-ext-install curl && \
     docker-php-ext-install zip && \
     docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu && \
@@ -48,7 +47,7 @@ RUN \
 COPY php.ini /usr/local/etc/php/conf.d/php.ini
 
 RUN \
-  wget  -O /tmp/ioncube.tar.gz http://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64_${ARG_IONCUBE_VERSION}.tar.gz && \
+  wget  -O /tmp/ioncube.tar.gz http://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz && \
   tar -xzf /tmp/ioncube.tar.gz -C /tmp && \
   mv /tmp/ioncube /opt/ioncube && \
   echo zend_extension=/opt/ioncube/ioncube_loader_lin_${ARG_PHP_VERSION}.so >> /usr/local/etc/php/php.ini && \
@@ -65,6 +64,28 @@ COPY ssl_apache_testrail.conf /apache-conf/ssl_apache_testrail.conf
 COPY .htaccess /apache-conf/.htaccess
 
 COPY custom-entrypoint.sh /custom-entrypoint.sh
+
+
+
+SHELL ["/bin/bash", "-c"]
+
+#Legacy folder structure
+RUN ln -s /var/www/testrail/config/config.php   /var/www/testrail/config.php
+
+RUN rm -rf /var/www/testrail/custom && \
+    ln -s /var/www/testrail/config/custom /var/www/testrail/custom
+
+RUN rm -rf /var/www/testrail/logs && \
+    ln -s /opt/testrail/logs /var/www/testrail/logs
+
+RUN rm -rf /var/www/testrail/attachments && \
+    ln -s /opt/testrail/attachments /var/www/testrail/attachments
+
+RUN rm -rf /var/www/testrail/reports && \
+    ln -s /opt/testrail/reports /var/www/testrail/reports
+
+
+
 ENTRYPOINT ["/custom-entrypoint.sh"]
 CMD ["apache2-foreground"]
 
